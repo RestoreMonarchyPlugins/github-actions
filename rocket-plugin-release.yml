@@ -1,4 +1,4 @@
-name: Build & Create Unturned Rocket Plugin GitHub Release
+name: Build & Create GitHub Release
 
 on:
   workflow_dispatch:
