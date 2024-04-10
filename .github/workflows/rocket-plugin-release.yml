@@ -4,19 +4,15 @@ on:
   workflow_call:
     inputs:
       project_name:
-        required: true
         type: string
         default: ${{ github.event.repository.name }}
       project_path:
-        required: true
         type: string
         default: "./${{ github.event.repository.name }}/${{ github.event.repository.name }}.csproj"
       build_directory:
-        required: true
         type: string
         default: "./${{ github.event.repository.name }}/bin/Release/net48"
       plugin_file_name:
-        required: true
         type: string
         default: "${{ github.event.repository.name }}.dll"
   
