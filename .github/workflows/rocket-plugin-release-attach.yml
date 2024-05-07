@@ -11,9 +11,6 @@ on:
         type: string
       plugin_file_name:
         type: string
-      copy_libraries:
-        type: string
-        default: "false"
 
 jobs:
   build_and_attach:
@@ -22,6 +19,12 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Get version
+        id: package_version
+        uses: KageKirin/get-csproj-version@v0
+        with:
+          file: ${{ inputs.project_path }}
     
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
@@ -41,11 +44,6 @@ jobs:
         run: |
           mkdir -p ./release/Plugins ./release/Libraries
           mv ${{ inputs.build_directory }}/${{ inputs.plugin_file_name }} ./release/Plugins/
-          if [[ "${{ inputs.copy_libraries }}" == "true" ]]; then
-            if [ -n "$(find ${{ inputs.build_directory }} -maxdepth 1 -name '*.dll')" ]; then
-              mv ${{ inputs.build_directory }}/*.dll ./release/Libraries/
-            fi
-          fi
           cd ./release/
           zip -qr ./../release.zip *
         shell: bash
@@ -63,5 +61,5 @@ jobs:
         with:
           upload_url: ${{ steps.latest_release_info.outputs.upload_url }}
           asset_path: ./release.zip
-          asset_name: "/${{ inputs.project_name }}.zip"
+          asset_name: "/${{ inputs.project_name }}-v${{ steps.package_version.outputs.version }}.zip"
           asset_content_type: application/zip
