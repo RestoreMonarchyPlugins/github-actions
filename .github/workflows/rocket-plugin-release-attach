@@ -1,0 +1,58 @@
+name: Rocket Plugin Release Attach
+
+on:
+  workflow_call:
+    inputs:
+      project_name:
+        type: string
+      project_path:
+        type: string
+      build_directory:
+        type: string
+      plugin_file_name:
+        type: string
+      upload_url:
+        type: string
+
+jobs:
+  build_and_attach:
+    name: Build and Attach Rocket Plugin
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+    
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 6.x
+          
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Install zip
+        run: sudo apt-get install zip
+
+      - name: Zip Rocket release artifacts
+        run: |
+          mkdir -p ./release/Plugins ./release/Libraries
+          mv ${{ inputs.build_directory }}/${{ inputs.plugin_file_name }} ./release/Plugins/
+          if [ -n "$(find ${{ inputs.build_directory }} -maxdepth 1 -name '*.dll')" ]; then
+            mv ${{ inputs.build_directory }}/*.dll ./release/Libraries/
+          fi
+          cd ./release/
+          zip -qr ./../release.zip *
+        shell: bash
+        
+      - name: Upload Rocket release asset to published release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ inputs.upload_url }}
+          asset_path: ./release.zip
+          asset_name: "/${{ inputs.project_name }}.zip"
+          asset_content_type: application/zip
