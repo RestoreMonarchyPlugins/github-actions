@@ -11,8 +11,6 @@ on:
         type: string
       plugin_file_name:
         type: string
-      upload_url:
-        type: string
 
 jobs:
   build_and_attach:
@@ -46,13 +44,19 @@ jobs:
           cd ./release/
           zip -qr ./../release.zip *
         shell: bash
+
+      - name: Gets latest created release info
+        id: latest_release_info
+        uses: jossef/action-latest-release-info@v1.2.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         
       - name: Upload Rocket release asset to published release
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ inputs.upload_url }}
+          upload_url: ${{ steps.latest_release_info.outputs.upload_url }}
           asset_path: ./release.zip
           asset_name: "/${{ inputs.project_name }}.zip"
           asset_content_type: application/zip
