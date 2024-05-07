@@ -11,6 +11,9 @@ on:
         type: string
       plugin_file_name:
         type: string
+      copy_libraries:
+        type: string
+        default: "true"
 
 jobs:
   build_and_attach:
@@ -38,8 +41,10 @@ jobs:
         run: |
           mkdir -p ./release/Plugins ./release/Libraries
           mv ${{ inputs.build_directory }}/${{ inputs.plugin_file_name }} ./release/Plugins/
-          if [ -n "$(find ${{ inputs.build_directory }} -maxdepth 1 -name '*.dll')" ]; then
-            mv ${{ inputs.build_directory }}/*.dll ./release/Libraries/
+          if [[ "${{ inputs.copy_libraries }}" == "true" ]]; then
+            if [ -n "$(find ${{ inputs.build_directory }} -maxdepth 1 -name '*.dll')" ]; then
+              mv ${{ inputs.build_directory }}/*.dll ./release/Libraries/
+            fi
           fi
           cd ./release/
           zip -qr ./../release.zip *
