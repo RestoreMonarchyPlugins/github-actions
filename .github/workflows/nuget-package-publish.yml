@@ -1,0 +1,33 @@
+name: NuGet Package Publish
+
+on:
+  workflow_call:
+    inputs:
+      nuspec_path:
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Setup .NET environment
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: '5.0.x'
+
+    - name: Restore NuGet
+      run: dotnet tool restore
+
+    - name: Extract version from .nuspec file
+      id: extract_version
+      run: echo "::set-output name=version::$(grep -oP '(?<=<version>)[^<]+' ${{ inputs.nuspec_path }})"
+
+    - name: Pack NuGet package
+      run: nuget pack ${{ inputs.nuspec_path }} -Version ${{ steps.extract_version.outputs.version }} -OutputDirectory ./dist
+
+    - name: Publish NuGet package
+      run: nuget push ./dist/*.nupkg --source https://nuget.pkg.github.com/RestoreMonarchy/index.json --api-key ${{ secrets.NUGET_API_KEY }}
