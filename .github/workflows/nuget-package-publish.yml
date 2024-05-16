@@ -30,4 +30,4 @@ jobs:
       run: nuget pack ${{ inputs.nuspec_path }} -Version ${{ steps.extract_version.outputs.version }} -OutputDirectory ./dist
 
     - name: Publish NuGet package
-      run: dotnet nuget push ./dist/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }}
+      run: dotnet nuget push ./dist/*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }}
