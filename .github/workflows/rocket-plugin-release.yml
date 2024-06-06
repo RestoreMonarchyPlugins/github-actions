@@ -60,6 +60,10 @@ jobs:
         uses: mukunku/tag-exists-action@v1.6.0
         with: 
           tag: v${{ steps.package_version.outputs.version }}
+
+      - name: Get last commit message
+        id: get_last_commit
+        run: echo "::set-output name=message::$(git log -1 --pretty=%B)"
         
       - name: Create release
         id: create_release
@@ -70,6 +74,7 @@ jobs:
         with:
           tag_name: v${{ steps.package_version.outputs.version }}
           release_name: "${{ github.event.repository.name }} v${{ steps.package_version.outputs.version }}"
+          body: "${{ steps.get_last_commit.outputs.message }}"
           draft: true
           prerelease: false
       
