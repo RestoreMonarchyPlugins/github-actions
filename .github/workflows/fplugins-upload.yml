@@ -1,0 +1,42 @@
+name: Upload release to FPlugins.com
+
+on:
+  workflow_call:
+    inputs:
+      product_id:
+        type: string
+        required: true
+      branch_id:
+        type: string
+        required: true
+      version:
+        type: string
+        default: ${{ github.event.release.tag_name }}
+      description:
+        type: string
+        default: ${{ github.event.release.body }}
+      asset_file_name:
+        type: string
+        default: ${{ github.event.repository.name }}-v${{ github.event.release.tag_name }}.zip
+      plugin_file_name:
+        type: string
+        default: "${{ github.event.repository.name }}.dll"
+
+jobs:
+  build:
+    name: Upload to FPlugins.com
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download RocketMod Release
+        uses: dsaltares/fetch-gh-release-asset@master
+        with:
+          repo: "${{ github.event.repository.full_name }}"
+          version: "tags/${{ inputs.version }}"
+          file: "${{ inputs.asset_file_name }}"
+          target: "${{ inputs.asset_file_name }}"
+          token: "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Push Release File
+        run: 'curl -X POST "https://api.fplugins.com/products/${{ inputs.product_id }}/branches/${{ inputs.branch_id }}/versions" -F "Changelog=${{ inputs.description }}" -F "Version=${{ inputs.version }}" -F "file=@${{ inputs.asset_file_name }}" -H  "accept: */*" -H  "Content-Type: multipart/form-data" -H "Secret: ${{ secrets.FPLUGINS_SECRET }}"'
+        shell: bash
