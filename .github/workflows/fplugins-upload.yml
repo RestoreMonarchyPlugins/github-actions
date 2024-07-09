@@ -18,6 +18,9 @@ on:
       asset_file_name:
         type: string
         default: ${{ github.event.repository.name }}-v${{ github.event.release.tag_name }}.zip
+    secrets:
+      fplugins_secret:
+        required: true
 
 jobs:
   build:
@@ -36,7 +39,7 @@ jobs:
 
       - name: Push Release File
         env:
-          FPLUGINS_SECRET: ${{ secrets.FPLUGINS_SECRET }}
+          FPLUGINS_SECRET: ${{ secrets.fplugins_secret }}
         if: env.FPLUGINS_SECRET != null
         run: 'curl -X POST "https://api.fplugins.com/products/${{ inputs.product_id }}/branches/${{ inputs.branch_id }}/versions" -F "Changelog=${{ inputs.description }}" -F "Version=${{ inputs.version }}" -F "file=@${{ inputs.asset_file_name }}" -H  "accept: */*" -H  "Content-Type: multipart/form-data" -H "Secret: ${{ env.FPLUGINS_SECRET }}"'
         shell: bash
