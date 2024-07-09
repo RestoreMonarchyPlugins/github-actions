@@ -41,5 +41,14 @@ jobs:
         env:
           FPLUGINS_SECRET: ${{ secrets.fplugins_secret }}
         if: env.FPLUGINS_SECRET != null
-        run: 'curl -X POST "https://api.fplugins.com/products/${{ inputs.product_id }}/branches/${{ inputs.branch_id }}/versions" -F "Changelog=${{ inputs.description }}" -F "Version=${{ inputs.version }}.0" -F "file=@${{ inputs.asset_file_name }}" -H  "accept: */*" -H  "Content-Type: multipart/form-data" -H "Secret: ${{ env.FPLUGINS_SECRET }}"'
+        run: |
+          VERSION=${{ inputs.version }}
+          SEMVER_VERSION=${VERSION#v} # Remove leading 'v' if present
+          curl -X POST "https://api.fplugins.com/products/${{ inputs.product_id }}/branches/${{ inputs.branch_id }}/versions" \
+            -F "Changelog=${{ inputs.description }}" \
+            -F "Version=${SEMVER_VERSION}" \
+            -F "file=@${{ inputs.asset_file_name }}" \
+            -H "accept: */*" \
+            -H "Content-Type: multipart/form-data" \
+            -H "Secret: ${{ env.FPLUGINS_SECRET }}"
         shell: bash
