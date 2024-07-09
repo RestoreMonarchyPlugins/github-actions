@@ -35,5 +35,8 @@ jobs:
           token: "${{ secrets.GITHUB_TOKEN }}"
 
       - name: Push Release File
-        run: 'curl -X POST "https://api.fplugins.com/products/${{ inputs.product_id }}/branches/${{ inputs.branch_id }}/versions" -F "Changelog=${{ inputs.description }}" -F "Version=${{ inputs.version }}" -F "file=@${{ inputs.asset_file_name }}" -H  "accept: */*" -H  "Content-Type: multipart/form-data" -H "Secret: ${{ secrets.FPLUGINS_SECRET }}"'
+        env:
+          FPLUGINS_SECRET: ${{ secrets.FPLUGINS_SECRET }}
+        if: env.FPLUGINS_SECRET != null
+        run: 'curl -X POST "https://api.fplugins.com/products/${{ inputs.product_id }}/branches/${{ inputs.branch_id }}/versions" -F "Changelog=${{ inputs.description }}" -F "Version=${{ inputs.version }}" -F "file=@${{ inputs.asset_file_name }}" -H  "accept: */*" -H  "Content-Type: multipart/form-data" -H "Secret: ${{ env.FPLUGINS_SECRET }}"'
         shell: bash
