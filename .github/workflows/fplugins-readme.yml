@@ -1,0 +1,41 @@
+name: Update Product Description on FPlugins.com
+
+on:
+  workflow_call:
+    inputs:
+      product_id:
+        type: string
+        required: true
+    secrets:
+      fplugins_secret:
+        required: true
+
+jobs:
+  update-description:
+    name: Update Product Description on FPlugins.com
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Extract README Content
+        id: readme
+        run: |
+          DESCRIPTION=$(cat README.md)
+          DESCRIPTION_TRUNCATED=$(echo "$DESCRIPTION" | head -c 10000)
+          echo "::set-output name=description::${DESCRIPTION_TRUNCATED}"
+
+      - name: Update Product Description
+        env:
+          FPLUGINS_SECRET: ${{ secrets.fplugins_secret }}
+          PRODUCT_ID: ${{ github.event.inputs.product_id }}
+          DESCRIPTION: ${{ steps.readme.outputs.description }}
+        if: env.FPLUGINS_SECRET != null
+        run: |
+          curl -X PATCH "https://api.fplugins.com/products/${{ env.PRODUCT_ID }}/description" \
+            -H "accept: */*" \
+            -H "Content-Type: application/json" \
+            -H "Secret: ${{ env.FPLUGINS_SECRET }}" \
+            -d "{\"Description\": \"${{ env.DESCRIPTION }}\"}"
+        shell: bash
