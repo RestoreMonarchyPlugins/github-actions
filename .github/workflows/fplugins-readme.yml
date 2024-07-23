@@ -20,9 +20,9 @@ jobs:
         id: readme
         run: |
           content=$(cat README.md)
-          # This replaces newlines with '\n' and escapes double quotes
-          content="${content//$'\n'/\\n}"
-          content="${content//\"/\\\"}"
+          content="${content//'%'/'%25'}"
+          content="${content//$'\n'/'%0A'}"
+          content="${content//$'\r'/'%0D'}"
           echo "description=$content" >> $GITHUB_OUTPUT
         shell: bash
 
@@ -30,13 +30,21 @@ jobs:
         env:
           FPLUGINS_SECRET: ${{ secrets.fplugins_secret }}
           PRODUCT_ID: ${{ inputs.product_id }}
+          README_CONTENT: ${{ steps.readme.outputs.description }}
         if: env.FPLUGINS_SECRET != null
         run: |
-          response=$(curl -s -w "\n%{http_code}" -X PUT "https://api.fplugins.com/products/${{ env.PRODUCT_ID }}/description" \
+          json_payload=$(cat << EOF
+          {
+            "Description": "$README_CONTENT"
+          }
+          EOF
+          )
+          
+          response=$(curl -s -w "\n%{http_code}" -X PUT "https://api.fplugins.com/products/$PRODUCT_ID/description" \
             -H "accept: */*" \
             -H "Content-Type: application/json" \
-            -H "Secret: ${{ env.FPLUGINS_SECRET }}" \
-            -d "{\"Description\": \"${{ steps.readme.outputs.description }}\"}")
+            -H "Secret: $FPLUGINS_SECRET" \
+            -d "$json_payload")
           
           http_code=$(echo "$response" | tail -n1)
           body=$(echo "$response" | sed '$d')
