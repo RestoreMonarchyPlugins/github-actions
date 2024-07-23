@@ -1,5 +1,4 @@
 name: Update Product Description on FPlugins.com
-
 on:
   workflow_call:
     inputs:
@@ -9,33 +8,45 @@ on:
     secrets:
       fplugins_secret:
         required: true
-
 jobs:
   update-description:
     name: Update Product Description on FPlugins.com
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
-
-      - name: Extract README Content
+      
+      - name: Read README Content
         id: readme
         run: |
-          DESCRIPTION=$(cat README.md)
-          echo "::set-output name=description::${DESCRIPTION}"
+          content=$(cat README.md)
+          # This replaces newlines with '\n' and escapes double quotes
+          content="${content//$'\n'/\\n}"
+          content="${content//\"/\\\"}"
+          echo "description=$content" >> $GITHUB_OUTPUT
+        shell: bash
 
       - name: Update Product Description
         env:
           FPLUGINS_SECRET: ${{ secrets.fplugins_secret }}
           PRODUCT_ID: ${{ inputs.product_id }}
-          DESCRIPTION: ${{ steps.readme.outputs.description }}
         if: env.FPLUGINS_SECRET != null
         run: |
-          curl -X PUT "https://api.fplugins.com/products/${{ env.PRODUCT_ID }}/description" \
+          response=$(curl -s -w "\n%{http_code}" -X PUT "https://api.fplugins.com/products/${{ env.PRODUCT_ID }}/description" \
             -H "accept: */*" \
             -H "Content-Type: application/json" \
             -H "Secret: ${{ env.FPLUGINS_SECRET }}" \
-            -d "{\"Description\": \"${{ env.DESCRIPTION }}\"}" \
-            -v
+            -d "{\"Description\": \"${{ steps.readme.outputs.description }}\"}")
+          
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+          
+          echo "Response body:"
+          echo "$body"
+          echo "Status code: $http_code"
+          
+          if [ "$http_code" -ge 400 ]; then
+            echo "Error: API request failed with status code $http_code"
+            exit 1
+          fi
         shell: bash
