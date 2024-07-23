@@ -30,7 +30,7 @@ jobs:
           README_CONTENT: ${{ steps.readme.outputs.description }}
         if: env.FPLUGINS_SECRET != null
         run: |
-          json_payload=$(jq -n --arg desc "$README_CONTENT" '{"Description": $desc}')
+          json_payload=$(jq -n --arg desc $README_CONTENT '{"Description": $desc}')
           
           response=$(curl -s -w "\n%{http_code}" -X PUT "https://api.fplugins.com/products/$PRODUCT_ID/description" \
             -H "accept: */*" \
