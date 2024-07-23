@@ -19,11 +19,9 @@ jobs:
       - name: Read and Process README Content
         id: readme
         run: |
-          # Read content and escape for JSON, but preserve actual newlines
-          content=$(cat README.md | jq -Rs . | sed 's/\\n/\n/g')
-          echo "description<<EOF" >> $GITHUB_OUTPUT
-          echo "$content" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          # Read content, escape only necessary characters, and preserve newlines
+          content=$(cat README.md | sed 's/\\/\\\\/g; s/"/\\"/g; s/$/\\n/' | tr -d '\n')
+          echo "description=$content" >> $GITHUB_OUTPUT
         shell: bash
 
       - name: Update Product Description
@@ -33,8 +31,8 @@ jobs:
           README_CONTENT: ${{ steps.readme.outputs.description }}
         if: env.FPLUGINS_SECRET != null
         run: |
-          # Create JSON payload while preserving newlines
-          json_payload=$(jq -n --arg desc "$README_CONTENT" '{"Description": $desc}')
+          # Create JSON payload
+          json_payload="{\"Description\": \"$README_CONTENT\"}"
           
           response=$(curl -s -i -w "\n%{http_code}" -X PUT "https://api.fplugins.com/products/$PRODUCT_ID/description" \
             -H "accept: */*" \
