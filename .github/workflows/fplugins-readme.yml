@@ -16,13 +16,10 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v2
       
-      - name: Read README Content
+      - name: Read and Encode README Content
         id: readme
         run: |
-          content=$(cat README.md)
-          content="${content//'%'/'%25'}"
-          content="${content//$'\n'/'%0A'}"
-          content="${content//$'\r'/'%0D'}"
+          content=$(cat README.md | jq -Rs .)
           echo "description=$content" >> $GITHUB_OUTPUT
         shell: bash
 
@@ -33,12 +30,7 @@ jobs:
           README_CONTENT: ${{ steps.readme.outputs.description }}
         if: env.FPLUGINS_SECRET != null
         run: |
-          json_payload=$(cat << EOF
-          {
-            "Description": "$README_CONTENT"
-          }
-          EOF
-          )
+          json_payload=$(jq -n --arg desc "$README_CONTENT" '{"Description": $desc}')
           
           response=$(curl -s -w "\n%{http_code}" -X PUT "https://api.fplugins.com/products/$PRODUCT_ID/description" \
             -H "accept: */*" \
@@ -57,4 +49,12 @@ jobs:
             echo "Error: API request failed with status code $http_code"
             exit 1
           fi
+        shell: bash
+
+      - name: Debug Output (if failed)
+        if: failure()
+        run: |
+          echo "JSON Payload (first 1000 characters):"
+          echo "$json_payload" | cut -c1-1000
+          echo "..."
         shell: bash
