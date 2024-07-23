@@ -16,11 +16,14 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v2
       
-      - name: Read and Encode README Content
+      - name: Read and Process README Content
         id: readme
         run: |
-          content=$(cat README.md | jq -Rs .)
-          echo "description=$content" >> $GITHUB_OUTPUT
+          # Read content and escape for JSON, but preserve actual newlines
+          content=$(cat README.md | jq -Rs . | sed 's/\\n/\n/g')
+          echo "description<<EOF" >> $GITHUB_OUTPUT
+          echo "$content" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
         shell: bash
 
       - name: Update Product Description
@@ -30,19 +33,20 @@ jobs:
           README_CONTENT: ${{ steps.readme.outputs.description }}
         if: env.FPLUGINS_SECRET != null
         run: |
-          json_payload=$(jq -n --arg desc $README_CONTENT '{"Description": $desc}')
+          # Create JSON payload while preserving newlines
+          json_payload=$(jq -n --arg desc "$README_CONTENT" '{"Description": $desc}')
           
-          response=$(curl -s -w "\n%{http_code}" -X PUT "https://api.fplugins.com/products/$PRODUCT_ID/description" \
+          response=$(curl -s -i -w "\n%{http_code}" -X PUT "https://api.fplugins.com/products/$PRODUCT_ID/description" \
             -H "accept: */*" \
             -H "Content-Type: application/json" \
             -H "Secret: $FPLUGINS_SECRET" \
             -d "$json_payload")
           
           http_code=$(echo "$response" | tail -n1)
-          body=$(echo "$response" | sed '$d')
+          headers_and_body=$(echo "$response" | sed '$d')
           
-          echo "Response body:"
-          echo "$body"
+          echo "Response headers and body:"
+          echo "$headers_and_body"
           echo "Status code: $http_code"
           
           if [ "$http_code" -ge 400 ]; then
