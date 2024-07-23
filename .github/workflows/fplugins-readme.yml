@@ -23,8 +23,7 @@ jobs:
         id: readme
         run: |
           DESCRIPTION=$(cat README.md)
-          DESCRIPTION_TRUNCATED=$(echo "$DESCRIPTION" | head -c 10000)
-          echo "::set-output name=description::${DESCRIPTION_TRUNCATED}"
+          echo "::set-output name=description::${DESCRIPTION}"
 
       - name: Update Product Description
         env:
@@ -37,5 +36,6 @@ jobs:
             -H "accept: */*" \
             -H "Content-Type: application/json" \
             -H "Secret: ${{ env.FPLUGINS_SECRET }}" \
-            -d "{\"Description\": \"${{ env.DESCRIPTION }}\"}"
+            -d "{\"Description\": \"${{ env.DESCRIPTION }}\"}" \
+            -v
         shell: bash
