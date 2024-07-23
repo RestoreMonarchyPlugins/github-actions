@@ -32,7 +32,7 @@ jobs:
           DESCRIPTION: ${{ steps.readme.outputs.description }}
         if: env.FPLUGINS_SECRET != null
         run: |
-          curl -X PATCH "https://api.fplugins.com/products/${{ env.PRODUCT_ID }}/description" \
+          curl -X PUT "https://api.fplugins.com/products/${{ env.PRODUCT_ID }}/description" \
             -H "accept: */*" \
             -H "Content-Type: application/json" \
             -H "Secret: ${{ env.FPLUGINS_SECRET }}" \
