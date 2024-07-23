@@ -29,7 +29,7 @@ jobs:
       - name: Update Product Description
         env:
           FPLUGINS_SECRET: ${{ secrets.fplugins_secret }}
-          PRODUCT_ID: ${{ github.event.inputs.product_id }}
+          PRODUCT_ID: ${{ inputs.product_id }}
           DESCRIPTION: ${{ steps.readme.outputs.description }}
         if: env.FPLUGINS_SECRET != null
         run: |
