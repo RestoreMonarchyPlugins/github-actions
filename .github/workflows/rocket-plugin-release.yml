@@ -1,5 +1,4 @@
 name: Build & Create Rocket Plugin GitHub Release
-
 on:
   workflow_call:
     inputs:
@@ -15,15 +14,33 @@ on:
       plugin_file_name:
         type: string
         default: "${{ github.event.repository.name }}.dll"
-  
+    outputs:
+      version:
+        description: "The version of the released plugin"
+        value: ${{ jobs.build.outputs.version }}
+      release_id:
+        description: "The ID of the created release"
+        value: ${{ jobs.build.outputs.release_id }}
+      release_url:
+        description: "The URL of the created release"
+        value: ${{ jobs.build.outputs.release_url }}
+      asset_name:
+        description: "The name of the uploaded asset"
+        value: ${{ jobs.build.outputs.asset_name }}
+
 jobs:
   build:
     name: Create GitHub Release
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.package_version.outputs.version }}
+      release_id: ${{ steps.create_release.outputs.id }}
+      release_url: ${{ steps.create_release.outputs.html_url }}
+      asset_name: ${{ steps.upload_asset.outputs.asset_name }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-    
+   
       - name: Get version
         id: package_version
         uses: KageKirin/get-csproj-version@v0
@@ -34,7 +51,7 @@ jobs:
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: 6.x
-          
+         
       - name: Restore dependencies
         run: dotnet restore
 
@@ -54,20 +71,20 @@ jobs:
           cd ./release/
           zip -qr ./../release.zip *
         shell: bash
-        
+       
       - name: Check tag
         id: check_tag
         uses: mukunku/tag-exists-action@v1.6.0
-        with: 
+        with:
           tag: v${{ steps.package_version.outputs.version }}
 
       - name: Get last commit message
         id: get_last_commit
         run: echo "::set-output name=message::$(git log -1 --pretty=%B)"
-        
+       
       - name: Create release
         id: create_release
-        if: steps.check_tag.outputs.exists == 'false' 
+        if: steps.check_tag.outputs.exists == 'false'
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -77,21 +94,22 @@ jobs:
           body: "${{ steps.get_last_commit.outputs.message }}"
           draft: true
           prerelease: false
-      
+     
       - name: Upload Rocket release asset
-        if: steps.check_tag.outputs.exists == 'false' 
+        id: upload_asset
+        if: steps.check_tag.outputs.exists == 'false'
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./release.zip
-          asset_name: "/${{ github.event.repository.name }}-v${{ steps.package_version.outputs.version }}.zip"
+          asset_name: "${{ github.event.repository.name }}-v${{ steps.package_version.outputs.version }}.zip"
           asset_content_type: application/zip
 
       - name: Upload Release Assets
         id: upload-release-assets
-        if: steps.check_tag.outputs.exists == 'false' 
+        if: steps.check_tag.outputs.exists == 'false'
         uses: dwenegar/upload-release-assets@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -100,8 +118,12 @@ jobs:
           assets_path: ./*.unitypackage
 
       - uses: eregon/publish-release@v1
-        if: steps.check_tag.outputs.exists == 'false' 
+        if: steps.check_tag.outputs.exists == 'false'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           release_id: ${{ steps.create_release.outputs.id }}
+
+      - name: Set asset name output
+        if: steps.check_tag.outputs.exists == 'false'
+        run: echo "::set-output name=asset_name::${{ github.event.repository.name }}-v${{ steps.package_version.outputs.version }}.zip"
