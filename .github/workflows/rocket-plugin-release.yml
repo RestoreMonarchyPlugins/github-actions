@@ -27,6 +27,9 @@ on:
       asset_name:
         description: "The name of the uploaded asset"
         value: ${{ jobs.build.outputs.asset_name }}
+      description:
+        description: "The description of the release"
+        value: ${{ jobs.build.outputs.description }}
 
 jobs:
   build:
@@ -37,6 +40,7 @@ jobs:
       release_id: ${{ steps.create_release.outputs.id }}
       release_url: ${{ steps.create_release.outputs.html_url }}
       asset_name: ${{ steps.upload_asset.outputs.asset_name }}
+      description: ${{ steps.get_last_commit.outputs.message }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
