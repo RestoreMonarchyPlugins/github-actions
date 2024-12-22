@@ -67,9 +67,10 @@ jobs:
 
       - name: Zip Rocket release artifacts
         run: |
-          mkdir -p ./release/Plugins ./release/Libraries
+          mkdir -p ./release/Plugins
           mv ${{ inputs.build_directory }}/${{ inputs.plugin_file_name }} ./release/Plugins/
-          if [ -n "$(find ${{ inputs.build_directory }} -maxdepth 1 -name '*.dll')" ]; then
+          if [ -n "$(find ${{ inputs.build_directory }} -maxdepth 1 -type f -name '*.dll' ! -name '${{ inputs.plugin_file_name }}')" ]; then
+            mkdir -p ./release/Libraries
             mv ${{ inputs.build_directory }}/*.dll ./release/Libraries/
           fi
           cd ./release/
