@@ -8,23 +8,33 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04  # Specify a specific Ubuntu version
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3  # Updated from v2
 
     - name: Setup .NET environment
-      uses: actions/setup-dotnet@v1
+      uses: actions/setup-dotnet@v3  # Updated from v1
       with:
-        dotnet-version: '5.0.x'
+        dotnet-version: '6.0.x'  # Updated from 5.0.x
+
+    - name: Install SSL dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libssl-dev
 
     - name: Restore NuGet
       run: dotnet tool restore
 
     - name: Extract version from .nuspec file
       id: extract_version
-      run: echo "::set-output name=version::$(grep -oP '(?<=<version>)[^<]+' ${{ inputs.nuspec_path }})"
+      run: |
+        VERSION=$(grep -oP '(?<=<version>)[^<]+' ${{ inputs.nuspec_path }})
+        echo "version=$VERSION" >> $GITHUB_OUTPUT  # Updated syntax
+
+    - name: Setup NuGet
+      uses: NuGet/setup-nuget@v1.2.0
 
     - name: Pack NuGet package
       run: nuget pack ${{ inputs.nuspec_path }} -Version ${{ steps.extract_version.outputs.version }} -OutputDirectory ./dist
